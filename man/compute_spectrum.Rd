@@ -2,18 +2,55 @@
 % Please edit documentation in R/spectral.R
 \name{compute_spectrum}
 \alias{compute_spectrum}
-\title{Compute Power Spectrum}
+\title{Compute the One-Sided Power Spectrum}
 \usage{
-compute_spectrum(x, fs)
+compute_spectrum(x, fs = 1)
 }
 \arguments{
-\item{x}{Time series.}
+\item{x}{Numeric vector. The input time series. Must contain at least
+2 observations.}
 
-\item{fs}{Sampling frequency.}
+\item{fs}{Positive numeric. Sampling frequency in Hz (or consistent
+units). Default \code{1}.}
 }
 \value{
-List with frequency vector and power spectrum.
+A named list with two elements:
+\describe{
+\item{\code{f}}{Numeric vector of frequencies
+(\eqn{0} to \eqn{f_s/2}, exclusive), length
+\eqn{\lfloor n/2 \rfloor}.}
+\item{\code{P}}{Numeric vector of power spectral estimates,
+same length as \code{f}.}
+}
 }
 \description{
-Computes the one-sided power spectrum using the Fast Fourier Transform.
+Estimates the one-sided power spectrum of a time series using the
+Fast Fourier Transform (FFT). The series is mean-centred prior to
+transformation to remove the DC component.
+}
+\details{
+Let \eqn{X_k} denote the \eqn{k}-th coefficient of the DFT of
+\eqn{x_1, \ldots, x_n}. The raw periodogram is defined as
+
+\deqn{P_k = \frac{|X_k|^2}{n}, \quad k = 0, 1, \ldots, \lfloor n/2 \rfloor - 1}
+
+and the corresponding frequencies are
+
+\deqn{f_k = \frac{k \cdot f_s}{n}}
+
+Only the non-redundant (one-sided) portion of the spectrum is returned,
+i.e. frequencies from \eqn{0} up to (but not including) the Nyquist
+frequency \eqn{f_s / 2}.
+}
+\examples{
+set.seed(1)
+x   <- arima.sim(n = 256, model = list(ar = 0.8))
+sp  <- compute_spectrum(x, fs = 1)
+plot(sp$f, sp$P, type = "l",
+     xlab = "Frequency (Hz)", ylab = "Power",
+     main = "One-sided power spectrum")
+
+}
+\seealso{
+\code{\link[stats]{fft}}, \code{\link[stats]{spectrum}}
 }

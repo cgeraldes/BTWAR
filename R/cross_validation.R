@@ -2,22 +2,7 @@
 # Rolling-Origin Cross-Validation for BTWAR
 # ============================================================
 
-#' Rolling-Origin Cross-Validation for BTWAR
-#'
-#' Selects optimal Butterworth parameters (N, A)
-#' using out-of-sample RMSE.
-#'
-#' @param y Stationary time series.
-#' @param As_vec Candidate attenuation values.
-#' @param N_vec Candidate filter orders.
-#' @param fs Sampling frequency.
-#' @param min_train Minimum training size.
-#' @param verbose Logical flag.
-#' @param method Scaling estimation method.
-#'
-#' @return List containing CV results and optimal parameters.
-#'
-#' @export
+#' @noRd
 cv_butterworth_AsN <- function(
     y,
     As_vec,
@@ -41,9 +26,9 @@ cv_butterworth_AsN <- function(
     if(verbose)
       message(sprintf("Testing N = %d | A = %g dB", N, A))
 
-    out <- butterworth_polos_MZT(A, N, fs)
+    out <- butterworth_poles_MZT(A, N, fs)
 
-    z_k <- out$polos_z
+    z_k <- out$poles_z
     a   <- Re(pracma::Poly(z_k))
     phi <- -a[-1]
 
@@ -60,7 +45,7 @@ cv_butterworth_AsN <- function(
           A = A,
           rmse_cv = NA_real_,
           phi = phi,
-          polos_z = z_k,
+          poles_z = z_k,
           fc = out$fc
         )
       ))
@@ -102,7 +87,7 @@ cv_butterworth_AsN <- function(
         A = A,
         rmse_cv = rmse_val,
         phi = phi,
-        polos_z = z_k,
+        poles_z = z_k,
         fc = out$fc
       )
     )

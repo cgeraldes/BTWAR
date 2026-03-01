@@ -2,34 +2,36 @@
 % Please edit documentation in R/metrics.R
 \name{rmse}
 \alias{rmse}
-\title{Root Mean Squared Error (RMSE)}
+\title{Root Mean Squared Error}
 \usage{
 rmse(y_true, y_pred)
 }
 \arguments{
 \item{y_true}{Numeric vector of observed (true) values.}
 
-\item{y_pred}{Numeric vector of predicted values.}
+\item{y_pred}{Numeric vector of predicted values. Must have the same
+length as \code{y_true}.}
 }
 \value{
-Numeric scalar representing the root mean squared error.
+A single non-negative numeric value.
 }
 \description{
-Computes the root mean squared error between observed and predicted values.
+Computes the root mean squared error (RMSE) between observed and
+predicted values. RMSE penalises large deviations more strongly
+than MAE due to squaring, and is expressed in the same units as
+the response variable.
 }
 \details{
-RMSE measures the average magnitude of prediction error and
-penalizes large deviations more strongly due to squaring.
-
-Mathematically:
-
 \deqn{
-  RMSE = \sqrt{\frac{1}{n} \sum (y_i - \hat{y}_i)^2}
+  \mathrm{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
 }
 }
 \examples{
-y <- c(1, 2, 3)
+y    <- c(1, 2, 3)
 yhat <- c(1.1, 1.9, 3.2)
 rmse(y, yhat)
 
+}
+\seealso{
+\code{\link{mse}}
 }

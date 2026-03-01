@@ -2,23 +2,58 @@
 % Please edit documentation in R/stationarity.R
 \name{apply_stationarity}
 \alias{apply_stationarity}
-\title{Apply Stationarity to Train/Test Split}
+\title{Apply Stationarity Transformation to a Train/Test Split}
 \usage{
-apply_stationarity(y_tr_raw, y_te_raw, max_d = 3, alpha = 0.05)
+apply_stationarity(y_tr_raw, y_te_raw, max_d = 3L, alpha = 0.05)
 }
 \arguments{
-\item{y_tr_raw}{Training time series.}
+\item{y_tr_raw}{Numeric vector. Raw training time series. Must contain
+at least 4 observations.}
 
-\item{y_te_raw}{Test time series.}
+\item{y_te_raw}{Numeric vector. Raw test (hold-out) time series. Must
+contain at least 1 observation.}
 
-\item{max_d}{Maximum differencing order.}
+\item{max_d}{Non-negative integer. Maximum differencing order passed to
+\code{make_stationary()}. Default \code{3}.}
 
-\item{alpha}{Significance level.}
+\item{alpha}{Numeric in \eqn{(0, 1)}. Significance level for the
+Augmented Dickey-Fuller test. Default \code{0.05}.}
 }
 \value{
-List containing stationary train/test series and order used.
+A named list with four elements:
+\describe{
+\item{\code{y_tr}}{Numeric vector. Stationarised training series
+of length \eqn{n_{tr} - d}.}
+\item{\code{y_te}}{Numeric vector. Differenced test series of
+length \eqn{n_{te} - d}.}
+\item{\code{d}}{Integer. Number of differences applied.}
+\item{\code{stationary}}{Logical. \code{TRUE} if the ADF test
+declared the training series stationary.}
+}
 }
 \description{
-Applies stationarity transformation to training data
-and applies the same differencing order to test data.
+Determines the differencing order required to stationarise the training
+series using \code{make_stationary()} and applies the same order to the
+test series, ensuring both sets are on a comparable scale.
+}
+\details{
+This function is a convenience wrapper intended for use before fitting a
+\code{\link{btwar_fit}} model when the user wants to inspect or control
+the stationarity step explicitly. Internally, \code{\link{btwar_fit}}
+calls \code{make_stationary()} directly.
+}
+\examples{
+set.seed(1)
+y     <- cumsum(rnorm(200))          # random walk (non-stationary)
+n_tr  <- 160
+split <- apply_stationarity(
+  y_tr_raw = y[seq_len(n_tr)],
+  y_te_raw = y[seq.int(n_tr + 1L, length(y))]
+)
+split$d           # differencing order applied
+split$stationary  # was stationarity achieved?
+
+}
+\seealso{
+\code{\link{btwar_fit}}, \code{\link[tseries]{adf.test}}
 }

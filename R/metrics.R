@@ -9,65 +9,77 @@
 #   - Rolling-origin cross-validation
 #   - Model comparison
 #   - Train/test performance reporting
+#
+# Note: 'rmse' and 'mse' are common names. If namespace conflicts
+# arise with other packages (e.g., Metrics, yardstick), use
+# explicit qualification: BTWAR::rmse(), BTWAR::mse().
 # ============================================================
 
 
-#' Root Mean Squared Error (RMSE)
+#' Root Mean Squared Error
 #'
-#' Computes the root mean squared error between observed and predicted values.
-#'
-#' RMSE measures the average magnitude of prediction error and
-#' penalizes large deviations more strongly due to squaring.
-#'
-#' Mathematically:
+#' Computes the root mean squared error (RMSE) between observed and
+#' predicted values. RMSE penalises large deviations more strongly
+#' than MAE due to squaring, and is expressed in the same units as
+#' the response variable.
 #'
 #' \deqn{
-#'   RMSE = \sqrt{\frac{1}{n} \sum (y_i - \hat{y}_i)^2}
+#'   \mathrm{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
 #' }
 #'
 #' @param y_true Numeric vector of observed (true) values.
-#' @param y_pred Numeric vector of predicted values.
+#' @param y_pred Numeric vector of predicted values. Must have the same
+#'   length as \code{y_true}.
 #'
-#' @return Numeric scalar representing the root mean squared error.
+#' @return A single non-negative numeric value.
+#'
+#' @seealso \code{\link{mse}}
 #'
 #' @examples
-#' y <- c(1, 2, 3)
+#' y    <- c(1, 2, 3)
 #' yhat <- c(1.1, 1.9, 3.2)
 #' rmse(y, yhat)
 #'
 #' @export
 rmse <- function(y_true, y_pred) {
+  if (!is.numeric(y_true) || !is.numeric(y_pred))
+    stop("'y_true' and 'y_pred' must be numeric vectors.")
+  if (length(y_true) != length(y_pred))
+    stop("'y_true' and 'y_pred' must have the same length.")
 
   sqrt(mean((y_true - y_pred)^2, na.rm = TRUE))
-
 }
 
 
-#' Mean Squared Error (MSE)
+#' Mean Squared Error
 #'
-#' Computes the mean squared error between observed and predicted values.
-#'
-#' MSE is commonly used for optimization and theoretical analysis.
-#'
-#' Mathematically:
+#' Computes the mean squared error (MSE) between observed and predicted
+#' values. MSE is commonly used for optimisation and theoretical analysis,
+#' and is the square of \code{\link{rmse}}.
 #'
 #' \deqn{
-#'   MSE = \frac{1}{n} \sum (y_i - \hat{y}_i)^2
+#'   \mathrm{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
 #' }
 #'
-#' @param y Numeric vector of observed values.
-#' @param yhat Numeric vector of predicted values.
+#' @param y_true Numeric vector of observed (true) values.
+#' @param y_pred Numeric vector of predicted values. Must have the same
+#'   length as \code{y_true}.
 #'
-#' @return Numeric scalar representing the mean squared error.
+#' @return A single non-negative numeric value.
+#'
+#' @seealso \code{\link{rmse}}
 #'
 #' @examples
-#' y <- c(1, 2, 3)
+#' y    <- c(1, 2, 3)
 #' yhat <- c(1.1, 1.9, 3.2)
 #' mse(y, yhat)
 #'
 #' @export
-mse <- function(y, yhat) {
+mse <- function(y_true, y_pred) {
+  if (!is.numeric(y_true) || !is.numeric(y_pred))
+    stop("'y_true' and 'y_pred' must be numeric vectors.")
+  if (length(y_true) != length(y_pred))
+    stop("'y_true' and 'y_pred' must have the same length.")
 
-  mean((y - yhat)^2, na.rm = TRUE)
-
+  mean((y_true - y_pred)^2, na.rm = TRUE)
 }

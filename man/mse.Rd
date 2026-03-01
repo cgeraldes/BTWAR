@@ -2,33 +2,35 @@
 % Please edit documentation in R/metrics.R
 \name{mse}
 \alias{mse}
-\title{Mean Squared Error (MSE)}
+\title{Mean Squared Error}
 \usage{
-mse(y, yhat)
+mse(y_true, y_pred)
 }
 \arguments{
-\item{y}{Numeric vector of observed values.}
+\item{y_true}{Numeric vector of observed (true) values.}
 
-\item{yhat}{Numeric vector of predicted values.}
+\item{y_pred}{Numeric vector of predicted values. Must have the same
+length as \code{y_true}.}
 }
 \value{
-Numeric scalar representing the mean squared error.
+A single non-negative numeric value.
 }
 \description{
-Computes the mean squared error between observed and predicted values.
+Computes the mean squared error (MSE) between observed and predicted
+values. MSE is commonly used for optimisation and theoretical analysis,
+and is the square of \code{\link{rmse}}.
 }
 \details{
-MSE is commonly used for optimization and theoretical analysis.
-
-Mathematically:
-
 \deqn{
-  MSE = \frac{1}{n} \sum (y_i - \hat{y}_i)^2
+  \mathrm{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
 }
 }
 \examples{
-y <- c(1, 2, 3)
+y    <- c(1, 2, 3)
 yhat <- c(1.1, 1.9, 3.2)
 mse(y, yhat)
 
+}
+\seealso{
+\code{\link{rmse}}
 }

@@ -2,30 +2,13 @@
 # Autoregressive Prediction Utilities
 # ============================================================
 
-
-#' Compute AR Model Poles
-#'
-#' Computes the roots of the AR characteristic polynomial.
-#'
-#' @param phi Vector of AR coefficients.
-#'
-#' @return Complex vector of roots.
-#' @export
-polos_AR <- function(phi) {
+#' @noRd
+poles_AR <- function(phi) {
   polyroot(rev(c(1, -phi)))
 }
 
 
-#' Generate AR One-Step-Ahead Predictions
-#'
-#' Computes recursive one-step-ahead predictions
-#' from an autoregressive model.
-#'
-#' @param x Time series.
-#' @param phi AR coefficient vector.
-#'
-#' @return Numeric vector of predictions.
-#' @export
+#' @noRd
 yhat_ar <- function(x, phi) {
 
   p <- length(phi)
@@ -44,16 +27,7 @@ yhat_ar <- function(x, phi) {
 }
 
 
-#' Generate ARMA Predictions
-#'
-#' Computes recursive ARMA predictions.
-#'
-#' @param x Time series.
-#' @param ar AR coefficients.
-#' @param ma MA coefficients.
-#'
-#' @return Numeric vector of predictions.
-#' @export
+#' @noRd
 yhat_arma <- function(x, ar, ma){
 
   p <- length(ar)

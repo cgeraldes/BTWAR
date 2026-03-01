@@ -1,0 +1,245 @@
+---
+title: "Introduction to the BTWAR Package"
+author:
+  - "Carlos Brás-Geraldes"
+  - "J. Leonel Rocha"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    latex_engine: xelatex
+    highlight: tango
+    fig_caption: true
+    keep_tex: false
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \usepackage{booktabs}
+  - \usepackage{float}
+  - \usepackage{hyperref}
+  - \usepackage{xcolor}
+  - \definecolor{codeblue}{RGB}{33, 102, 172}
+  - \hypersetup{colorlinks=true, linkcolor=codeblue, urlcolor=codeblue, citecolor=codeblue}
+  - \floatplacement{figure}{H}
+vignette: >
+  %\VignetteIndexEntry{Introduction to the BTWAR Package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: BTWAR.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 6,
+  fig.height = 3.5,
+  fig.align = "center",
+  out.width = "90%",
+  fig.pos   = "H"
+)
+```
+
+# Introduction
+
+The **BTWAR** package implements the Butterworth-Induced Autoregressive
+modeling framework introduced in @btwar2026. The method derives
+autoregressive (AR) coefficients from analog Butterworth filter prototypes
+mapped into the discrete-time domain via the Matched Z-Transform (MZT).
+
+The key idea is to exploit the well-understood frequency-selectivity
+properties of Butterworth filters --- maximally flat magnitude response,
+monotonic roll-off, and a single tunable cutoff frequency --- and translate
+them into a structured family of AR models. This establishes a principled
+connection between **frequency-domain filter design** and **time-domain
+autoregressive modeling**, with the following practical advantages:
+
+- AR coefficients are fully determined by two interpretable parameters:
+  filter order $N$ and stopband attenuation $A_s$.
+- The cutoff frequency $f_c$ is optimised during fitting, providing a
+  direct spectral interpretation of the selected model.
+- Model order selection is performed via nested rolling-origin
+  cross-validation, avoiding look-ahead bias.
+- Scaling estimation supports three methods: least squares (LS), least
+  absolute deviations (LAD), and Huber M-estimation, providing robustness
+  options for non-Gaussian series.
+
+# Methodology
+
+## Butterworth Filter Prototype
+
+An $N$-th order analog Butterworth lowpass filter has a squared magnitude
+response
+
+$$
+|H(j\Omega)|^2 = \frac{1}{1 + \left(\Omega / \Omega_c\right)^{2N}}
+$$
+
+where $\Omega_c$ is the cutoff frequency. The poles of $H(s)$ lie on a
+circle of radius $\Omega_c$ in the left half of the $s$-plane, uniformly
+spaced in angle.
+
+## Matched Z-Transform
+
+The MZT maps each analog pole $s_k$ to a discrete-time pole
+$z_k = e^{s_k T}$, where $T = 1/f_s$ is the sampling period.
+The resulting AR polynomial
+
+$$
+A(z) = \prod_{k=1}^{N} \left(1 - z_k z^{-1}\right)
+$$
+
+defines the AR coefficients $\phi_1, \ldots, \phi_N$ via
+
+$$
+A(z) = 1 - \phi_1 z^{-1} - \cdots - \phi_N z^{-N}.
+$$
+
+## Model Fitting Pipeline
+
+Given a training series $\{y_t\}$, the fitting procedure is:
+
+1. **Stationarity** --- apply successive differencing (guided by the
+   Augmented Dickey-Fuller test) until stationarity is achieved.
+2. **Centering** --- subtract the training mean $\bar{y}$.
+3. **Cross-validation** --- search over a grid of $(A_s, N)$ pairs using
+   nested rolling-origin CV to select the combination that minimises
+   out-of-sample RMSE.
+4. **Scaling** --- estimate a scalar $\alpha$ by regressing the observed
+   series onto the one-step-ahead AR predictions using the chosen method
+   (LS, LAD, or Huber).
+
+# Usage
+
+## Installation
+
+```r
+# Install from CRAN
+install.packages("BTWAR")
+
+# Development version from GitHub
+# remotes::install_github("cgeraldes/BTWAR")
+```
+
+## Simulated Example
+
+We simulate an AR(2) series and partition it into training and test sets.
+
+```{r simulate}
+library(BTWAR)
+
+set.seed(42)
+n       <- 300
+y       <- arima.sim(model = list(ar = c(0.7, -0.2)), n = n)
+y_train <- y[seq_len(200)]
+y_test  <- y[seq.int(201, 300)]
+```
+
+## Model Fitting
+
+```{r fit}
+fit <- btwar_fit(
+  y_tr_raw = y_train,
+  y_te_raw = y_test,
+  method   = "ls"
+)
+```
+
+The `summary()` method prints the selected model parameters and
+performance metrics on both sets:
+
+```{r summary}
+summary(fit)
+```
+
+## Extracting Model Components
+
+Individual components can be extracted using the standard S3 interface:
+
+```{r extract}
+# AR coefficients selected by cross-validation
+coef(fit)
+
+# First fitted values on the training set
+head(fitted(fit))
+
+# First training residuals
+head(residuals(fit))
+```
+
+## Visualisation
+
+The `plot()` method produces a \texttt{ggplot2} chart of observed versus
+predicted values for either the training or test set.
+
+```{r plot-test, fig.cap = "Test set: observed series (dark) vs. BTWAR predictions (blue)."}
+plot(fit, dataset = "test", show_observed = TRUE)
+```
+
+An external benchmark series can be overlaid for direct comparison:
+
+```{r plot-benchmark, eval = FALSE}
+arima_fit  <- arima(y_train, order = c(1, 0, 0))
+arima_pred <- predict(arima_fit, n.ahead = 100)$pred
+
+plot(fit,
+     dataset       = "test",
+     show_observed = TRUE,
+     external      = as.numeric(arima_pred),
+     external_name = "ARIMA(1,0,0)")
+```
+
+## Spectral Inspection
+
+The power spectrum of the series can be inspected with
+`compute_spectrum()`:
+
+```{r spectrum, fig.cap = "One-sided power spectrum of the simulated AR(2) series."}
+sp <- compute_spectrum(as.numeric(y), fs = 1)
+
+plot(sp$f, sp$P,
+     type = "l", col = "#2166AC", lwd = 1.5,
+     xlab = "Frequency (Hz)", ylab = "Power",
+     main = "Power Spectrum")
+```
+
+# Robustness Options
+
+The `method` argument of `btwar_fit()` controls how the scaling parameter
+$\alpha$ is estimated. Table \ref{tab:methods} summarises the available
+options.
+
+\begin{table}[H]
+\centering
+\caption{Scaling estimation methods available in \texttt{btwar\_fit()}.}
+\label{tab:methods}
+\begin{tabular}{lll}
+\toprule
+\textbf{Method} & \textbf{Description} & \textbf{Recommended when} \\
+\midrule
+\texttt{"ls"}    & Ordinary least squares               & Gaussian residuals \\
+\texttt{"lad"}   & Least absolute deviations            & Heavy-tailed or skewed noise \\
+\texttt{"huber"} & Huber M-estimator ($\delta = 1.345$) & Mild outliers \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+```{r robust, eval = FALSE}
+fit_huber <- btwar_fit(
+  y_tr_raw = y_train,
+  y_te_raw = y_test,
+  method   = "huber"
+)
+summary(fit_huber)
+```
+
+# Session Information
+
+```{r session}
+sessionInfo()
+```
+
+# References
+

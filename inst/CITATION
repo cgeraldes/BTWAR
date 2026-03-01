@@ -8,11 +8,16 @@ citEntry(
     person("J. Leonel", "Rocha"),
     person("Filipe", "Martins")
   ),
-  journal = "Journal Name",
+  journal = "Mathematics",
   year = "2026",
-  doi = "10.xxxx/xxxxx",
+  volume = "14",
+  number = "3",
+  pages = "479",
+  doi = "10.3390/math14030479",
   textVersion = paste(
-    "Bras-Geraldes, C., Rocha, J.L., Martins, F. (2026).",
-    "Butterworth-Induced Autoregressive Modeling Framework."
+    "Bras-Geraldes, C.; Rocha, J.L.; Martins, F. (2026).",
+    "Butterworth-Induced Autoregressive Modeling Framework.",
+    "Mathematics, 14(3), 479.",
+    "https://doi.org/10.3390/math14030479"
   )
 )

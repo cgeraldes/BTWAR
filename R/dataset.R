@@ -2,19 +2,7 @@
 # AR Dataset Construction
 # ============================================================
 
-#' Construct AR Supervised Dataset
-#'
-#' Converts a univariate time series into a supervised learning
-#' dataset suitable for autoregressive modeling.
-#'
-#' @param series Numeric time series.
-#' @param p AR order.
-#' @param train_frac Training fraction (0-1).
-#' @param scale Logical; whether to standardize series.
-#'
-#' @return List containing training/test splits and scaling info.
-#'
-#' @export
+#' @noRd
 make_AR_dataset <- function(
     series,
     p = 5,
