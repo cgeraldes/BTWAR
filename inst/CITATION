@@ -1,0 +1,18 @@
+citHeader("To cite BTWAR in publications use:")
+
+citEntry(
+  entry = "Article",
+  title = "Butterworth-Induced Autoregressive Modeling Framework",
+  author = personList(
+    person("Carlos", "Bras-Geraldes"),
+    person("J. Leonel", "Rocha"),
+    person("Filipe", "Martins")
+  ),
+  journal = "Journal Name",
+  year = "2026",
+  doi = "10.xxxx/xxxxx",
+  textVersion = paste(
+    "Bras-Geraldes, C., Rocha, J.L., Martins, F. (2026).",
+    "Butterworth-Induced Autoregressive Modeling Framework."
+  )
+)

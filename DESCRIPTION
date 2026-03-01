@@ -1,0 +1,35 @@
+Package: BTWAR
+Type: Package
+Title: Butterworth-Induced Autoregressive Model
+Version: 0.1.0
+Authors@R:
+    c(
+        person("Carlos", "Bras-Geraldes",
+               email = "cgeraldes@gmail.com",
+               role = c("aut", "cre", "cph")),
+        person("J. Leonel", "Rocha",
+               role = c("aut", "cph")),
+        person("Filipe", "Martins",
+               role = c("aut", "cph"))
+    )
+Description: Implements the Butterworth-Induced Autoregressive (BTWAR)
+    modeling framework, where autoregressive coefficients are derived
+    from analog Butterworth filter prototypes mapped to the discrete-
+    time domain via the Matched Z-Transform. The approach provides a
+    structured link between frequency-domain filter design and
+    time-domain autoregressive modeling. Model selection is performed
+    using nested rolling-origin cross-validation.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Imports:
+    pracma,
+    tseries
+Suggests:
+    knitr
+URL: https://github.com/cgeraldes/BTWAR,
+     https://doi.org/10.3390/math14030479
+BugReports: https://github.com/cgeraldes/BTWAR/issues
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+
