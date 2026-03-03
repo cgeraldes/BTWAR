@@ -1,33 +1,15 @@
 ---
 title: "Introduction to the BTWAR Package"
 author:
-  - "Carlos Brás-Geraldes"
-  - "J. Leonel Rocha"
+- "Carlos Brás-Geraldes"
+- "J. Leonel Rocha"
 date: "`r Sys.Date()`"
-output:
-  pdf_document:
-    toc: true
-    toc_depth: 3
-    number_sections: true
-    latex_engine: xelatex
-    highlight: tango
-    fig_caption: true
-    keep_tex: false
-header-includes:
-  - \usepackage{amsmath}
-  - \usepackage{amssymb}
-  - \usepackage{booktabs}
-  - \usepackage{float}
-  - \usepackage{hyperref}
-  - \usepackage{xcolor}
-  - \definecolor{codeblue}{RGB}{33, 102, 172}
-  - \hypersetup{colorlinks=true, linkcolor=codeblue, urlcolor=codeblue, citecolor=codeblue}
-  - \floatplacement{figure}{H}
+output: rmarkdown::html_vignette
+bibliography: BTWAR.bib
 vignette: >
   %\VignetteIndexEntry{Introduction to the BTWAR Package}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-bibliography: BTWAR.bib
 ---
 
 ```{r setup, include = FALSE}
@@ -37,8 +19,7 @@ knitr::opts_chunk$set(
   fig.width = 6,
   fig.height = 3.5,
   fig.align = "center",
-  out.width = "90%",
-  fig.pos   = "H"
+  out.width = "90%"
 )
 ```
 
@@ -125,16 +106,15 @@ install.packages("BTWAR")
 
 ## Simulated Example
 
-We simulate an AR(2) series and partition it into training and test sets.
+We simulate an AR(3) series and partition it into training and test sets.
 
 ```{r simulate}
 library(BTWAR)
-
 set.seed(42)
-n       <- 300
-y       <- arima.sim(model = list(ar = c(0.7, -0.2)), n = n)
-y_train <- y[seq_len(200)]
-y_test  <- y[seq.int(201, 300)]
+n       <- 2000
+y       <- arima.sim(model = list(ar = c(0.34, -0.22, 0.16)), n = n)
+y_train <- y[seq_len(1600)]
+y_test  <- y[seq.int(1601, 2000)]
 ```
 
 ## Model Fitting
@@ -171,7 +151,7 @@ head(residuals(fit))
 
 ## Visualisation
 
-The `plot()` method produces a \texttt{ggplot2} chart of observed versus
+The `plot()` method produces a `ggplot2` chart of observed versus
 predicted values for either the training or test set.
 
 ```{r plot-test, fig.cap = "Test set: observed series (dark) vs. BTWAR predictions (blue)."}
@@ -183,7 +163,6 @@ An external benchmark series can be overlaid for direct comparison:
 ```{r plot-benchmark, eval = FALSE}
 arima_fit  <- arima(y_train, order = c(1, 0, 0))
 arima_pred <- predict(arima_fit, n.ahead = 100)$pred
-
 plot(fit,
      dataset       = "test",
      show_observed = TRUE,
@@ -196,9 +175,8 @@ plot(fit,
 The power spectrum of the series can be inspected with
 `compute_spectrum()`:
 
-```{r spectrum, fig.cap = "One-sided power spectrum of the simulated AR(2) series."}
+```{r spectrum, fig.cap = "One-sided power spectrum of the simulated AR(3) series."}
 sp <- compute_spectrum(as.numeric(y), fs = 1)
-
 plot(sp$f, sp$P,
      type = "l", col = "#2166AC", lwd = 1.5,
      xlab = "Frequency (Hz)", ylab = "Power",
@@ -208,23 +186,13 @@ plot(sp$f, sp$P,
 # Robustness Options
 
 The `method` argument of `btwar_fit()` controls how the scaling parameter
-$\alpha$ is estimated. Table \ref{tab:methods} summarises the available
-options.
+$\alpha$ is estimated. The table below summarises the available options.
 
-\begin{table}[H]
-\centering
-\caption{Scaling estimation methods available in \texttt{btwar\_fit()}.}
-\label{tab:methods}
-\begin{tabular}{lll}
-\toprule
-\textbf{Method} & \textbf{Description} & \textbf{Recommended when} \\
-\midrule
-\texttt{"ls"}    & Ordinary least squares               & Gaussian residuals \\
-\texttt{"lad"}   & Least absolute deviations            & Heavy-tailed or skewed noise \\
-\texttt{"huber"} & Huber M-estimator ($\delta = 1.345$) & Mild outliers \\
-\bottomrule
-\end{tabular}
-\end{table}
+| Method | Description | Recommended when |
+|--------|-------------|------------------|
+| `"ls"` | Ordinary least squares | Gaussian residuals |
+| `"lad"` | Least absolute deviations | Heavy-tailed or skewed noise |
+| `"huber"` | Huber M-estimator ($\delta = 1.345$) | Mild outliers |
 
 ```{r robust, eval = FALSE}
 fit_huber <- btwar_fit(
@@ -242,4 +210,3 @@ sessionInfo()
 ```
 
 # References
-

@@ -22,7 +22,12 @@
 #'   during the stationarity transformation step. Default \code{3}.
 #' @param alpha_stationarity Numeric in \eqn{(0, 1)}. Significance level
 #'   for the Augmented Dickey-Fuller stationarity test. Default \code{0.05}.
-#' @param seed Integer. Random seed for reproducibility. Default \code{123}.
+#' @param min_train Non-negative integer or \code{NULL}. Minimum number of
+#'   observations used for training in the rolling-origin cross-validation
+#'   and for the final predictions. If \code{NULL} (default), the criterion
+#'   \code{max(20 * p, 100)} is applied automatically.
+#' @param verbose Logical. If \code{TRUE} (default), prints progress messages
+#'   during cross-validation.
 #'
 #' @return An object of class \code{"btwar"}, which is a named list
 #'   containing:
@@ -61,7 +66,8 @@ btwar_fit <- function(y_tr_raw,
                       N_vec              = 2:20,
                       max_d              = 3L,
                       alpha_stationarity = 0.05,
-                      seed               = 123L) {
+                      min_train = NULL,
+                      verbose = TRUE) {
 
   # ---- input validation --------------------------------------------------
   if (!is.numeric(y_tr_raw) || length(y_tr_raw) < 10L)
@@ -88,7 +94,9 @@ btwar_fit <- function(y_tr_raw,
       alpha_stationarity <= 0 || alpha_stationarity >= 1)
     stop("'alpha_stationarity' must be a single numeric value in (0, 1).")
 
-  set.seed(seed)
+  if (!is.null(min_train) &&
+      (!is.numeric(min_train) || length(min_train) != 1L || min_train < 1L))
+    stop("'min_train' must be a single positive integer or NULL.")
 
   # ---- stationarity transformation ---------------------------------------
   st    <- make_stationary(x = y_tr_raw, max_d = max_d,
@@ -112,6 +120,8 @@ btwar_fit <- function(y_tr_raw,
     As_vec = As_vec,
     N_vec  = N_vec,
     fs     = fs,
+    min_train = min_train,
+    verbose = verbose,
     method = method
   )
 
@@ -120,11 +130,13 @@ btwar_fit <- function(y_tr_raw,
   A_opt   <- cv_res$best$A
   fc_opt  <- cv_res$best$fc
   p       <- length(phi_BTW)
+  t0 <- if (is.null(min_train)) max(20L * p, 100L) else as.integer(min_train)
 
-  if (length(y_tr) <= p)
+  if (length(y_tr) <= t0)
     stop("Series too short for the selected model order.")
 
-  t0 <- p + 1L
+  if (length(y_te) <= t0)
+    stop("Test series too short for the selected model order.")
 
   # ---- training predictions ----------------------------------------------
   y0_tr     <- yhat_ar(y_tr, phi_BTW)

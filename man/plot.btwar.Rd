@@ -11,6 +11,17 @@
   show_observed = TRUE,
   external = NULL,
   external_name = "External",
+  title = NULL,
+  colour_btwar = "#2166AC",
+  colour_observed = "#333333",
+  colour_external = NULL,
+  lwd_btwar = 0.9,
+  lwd_observed = 0.55,
+  lwd_external = 0.7,
+  alpha = 0.9,
+  base_size = 11,
+  palette = "Dark 2",
+  layer_order = NULL,
   ...
 )
 }
@@ -34,6 +45,44 @@ Default \code{NULL}.}
 \item{external_name}{Character string. Legend label for the external
 series. Default \code{"External"}.}
 
+\item{title}{Character string. Plot title. If \code{NULL} (default), a
+title is generated automatically from the dataset name.}
+
+\item{colour_btwar}{Character string. Colour for the BTWAR prediction
+line. Default \code{"#2166AC"}.}
+
+\item{colour_observed}{Character string. Colour for the observed series
+line. Default \code{"#333333"}.}
+
+\item{colour_external}{Character string. Colour for the external series
+line. If \code{NULL} (default), a colour is assigned automatically
+from the \code{palette}.}
+
+\item{lwd_btwar}{Positive numeric. Line width for the BTWAR prediction
+line. Default \code{0.9}.}
+
+\item{lwd_observed}{Positive numeric. Line width for the observed series
+line. Default \code{0.55}.}
+
+\item{lwd_external}{Positive numeric. Line width for any external series
+line. Default \code{0.7}.}
+
+\item{alpha}{Numeric in \eqn{(0, 1]}. Transparency of all lines.
+Default \code{0.9}.}
+
+\item{base_size}{Positive numeric. Base font size passed to
+\code{\link[ggplot2]{theme_minimal}}. Default \code{11}.}
+
+\item{palette}{Character string. Name of the \code{\link[grDevices]{hcl.colors}}
+palette used for additional external series when \code{colour_external}
+is \code{NULL}. Default \code{"Dark 2"}.}
+
+\item{layer_order}{Character vector. Controls the drawing order (back to
+front) and legend order of the series. Must contain the names of all
+active series: \code{"Observed"}, \code{"BTWAR"}, and the value of
+\code{external_name} if an external series is supplied. If \code{NULL}
+(default), the fixed order Observed → BTWAR → external is used.}
+
 \item{...}{Additional arguments (currently unused).}
 }
 \value{
@@ -45,6 +94,10 @@ Generates a \pkg{ggplot2} line chart of fitted or test-set predictions
 from a \code{"btwar"} object. Optionally overlays the observed series
 and/or an external comparison series (e.g., a benchmark model).
 }
+\details{
+Series are drawn in the following fixed order (back to front):
+Observed, BTWAR, external.
+}
 \examples{
 \dontrun{
 fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series)
@@ -55,9 +108,20 @@ plot(fit, dataset = "train")
 # Test set with observed overlay
 plot(fit, dataset = "test", show_observed = TRUE)
 
-# Test set with an external benchmark
-plot(fit, dataset = "test", external = arima_preds,
-     external_name = "ARIMA")
+# Custom colours and line widths
+plot(fit,
+     dataset         = "test",
+     colour_btwar    = "steelblue",
+     colour_observed = "black",
+     lwd_btwar       = 1.2,
+     lwd_observed    = 0.8)
+
+# Test set with an external benchmark in red
+plot(fit,
+     dataset         = "test",
+     external        = arima_preds,
+     external_name   = "ARIMA",
+     colour_external = "red")
 }
 }
 \seealso{

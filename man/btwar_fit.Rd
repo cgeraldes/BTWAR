@@ -13,7 +13,8 @@ btwar_fit(
   N_vec = 2:20,
   max_d = 3L,
   alpha_stationarity = 0.05,
-  seed = 123L
+  min_train = NULL,
+  verbose = TRUE
 )
 }
 \arguments{
@@ -39,7 +40,13 @@ during the stationarity transformation step. Default \code{3}.}
 \item{alpha_stationarity}{Numeric in \eqn{(0, 1)}. Significance level
 for the Augmented Dickey-Fuller stationarity test. Default \code{0.05}.}
 
-\item{seed}{Integer. Random seed for reproducibility. Default \code{123}.}
+\item{min_train}{Non-negative integer or \code{NULL}. Minimum number of
+observations used for training in the rolling-origin cross-validation
+and for the final predictions. If \code{NULL} (default), the criterion
+\code{max(20 * p, 100)} is applied automatically.}
+
+\item{verbose}{Logical. If \code{TRUE} (default), prints progress messages
+during cross-validation.}
 }
 \value{
 An object of class \code{"btwar"}, which is a named list

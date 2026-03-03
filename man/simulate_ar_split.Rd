@@ -15,32 +15,33 @@ simulate_ar_split(
 }
 \arguments{
 \item{phi_real}{Numeric vector of true AR coefficients
-\eqn{\phi_1, \ldots, \phi_p}.  The process must be stationary (all roots
+\eqn{\phi_1, \ldots, \phi_p}. The process must be stationary (all roots
 of the characteristic polynomial outside the unit circle).}
 
-\item{n}{Integer.  Number of observations to retain after burn-in.
+\item{n}{Integer. Number of observations to retain after burn-in.
 Default \code{2000}.}
 
-\item{burn}{Integer.  Number of initial observations discarded as burn-in.
+\item{burn}{Integer. Number of initial observations discarded as burn-in.
 Default \code{200}.}
 
-\item{prop_train}{Numeric in \eqn{(0, 1)}.  Proportion of observations
-allocated to the training set.  Default \code{0.8}.}
+\item{prop_train}{Numeric in \eqn{(0, 1)}. Proportion of observations
+allocated to the training set. Default \code{0.8}.}
 
-\item{seasonal}{Logical.  If \code{TRUE} and \code{freq} is supplied, the
+\item{seasonal}{Logical. If \code{TRUE} and \code{freq} is supplied, the
 retained series is coerced to a \code{\link[stats]{ts}} object with the
-given frequency.  Default \code{FALSE}.}
+given frequency. Default \code{FALSE}.}
 
-\item{freq}{Integer or \code{NA}.  Seasonal frequency passed to
-\code{\link[stats]{ts}} when \code{seasonal = TRUE}.  Default \code{NA}.}
+\item{freq}{Integer or \code{NA}. Seasonal frequency passed to
+\code{\link[stats]{ts}} when \code{seasonal = TRUE}. Default \code{NA}.}
 }
 \value{
-A named list with three elements:
+A named list with four elements:
 \describe{
 \item{\code{series}}{The full simulated series (length \code{n}).}
 \item{\code{train}}{Training observations (first
 \code{floor(n * prop_train)} values).}
 \item{\code{test}}{Hold-out test observations (remaining values).}
+\item{\code{poles}}{Complex vector of true AR poles in the Z-plane.}
 }
 }
 \description{
@@ -49,21 +50,24 @@ discards a burn-in period, and partitions the result into a training set and
 a hold-out test set.
 }
 \details{
-The seed is fixed to \code{123} via \code{\link[base]{set.seed}} for
-reproducibility.  Users who need different realisations should call
-\code{set.seed()} with their own seed before invoking this function and
-remove or expose the internal \code{set.seed()} call if the function is
-integrated into a simulation study.
+Random number generation is controlled externally by the user via
+\code{\link[base]{set.seed}} when reproducibility is required.
+
+The function does not modify the global random number generator state.
+For reproducible results, users should call \code{set.seed()} prior
+to invoking this function.
 }
 \examples{
-# AR(2) with phi = (0.5, -0.3)
-result <- simulate_ar_split(phi_real = c(0.5, -0.3))
+# Reproducible AR(3) with phi = (0.6, -0.3, 0.2)
+set.seed(123)
+result <- simulate_ar_split(phi_real = c(0.6, -0.3, 0.2))
 length(result$train)  # 1600
 length(result$test)   # 400
 
-# AR(1) as a monthly time series, 90/10 split
+# AR(3) as a monthly time series, 90/10 split
+set.seed(123)
 result2 <- simulate_ar_split(
-  phi_real   = 0.8,
+  phi_real   = c(0.6, -0.3, 0.2),
   n          = 1200,
   prop_train = 0.9,
   seasonal   = TRUE,
