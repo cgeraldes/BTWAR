@@ -92,95 +92,192 @@ Given a training series $\{y_t\}$, the fitting procedure is:
    series onto the one-step-ahead AR predictions using the chosen method
    (LS, LAD, or Huber).
 
-# Usage
+# End-to-End Example
 
-## Installation
+This section walks through a complete BTWAR workflow using a simulated
+AR(3) process, including model fitting, comparison with ARIMA, and the
+full suite of diagnostic plots.
 
-```r
-# Install from CRAN
-install.packages("BTWAR")
+## Setup
 
-# Development version from GitHub
-# remotes::install_github("cgeraldes/BTWAR")
+```{r setup-example, message = FALSE}
+library(BTWAR)
+library(forecast)
+
+set.seed(123)
+
+fs <- 12000   # sampling frequency (Hz)
 ```
 
-## Simulated Example
+## Simulating Data
 
-We simulate an AR(3) series and partition it into training and test sets.
+We simulate an AR(3) process with known coefficients and split it into
+training (70%) and test (30%) sets using `simulate_ar_split()`.
 
 ```{r simulate}
-library(BTWAR)
-set.seed(42)
-n       <- 2000
-y       <- arima.sim(model = list(ar = c(0.34, -0.22, 0.16)), n = n)
-y_train <- y[seq_len(1600)]
-y_test  <- y[seq.int(1601, 2000)]
-```
+phi_true <- c(0.34, -0.22, 0.16)
 
-## Model Fitting
+sim_data <- simulate_ar_split(
+  phi_real   = phi_true,
+  n          = 1000,
+  burn       = 200,
+  prop_train = 0.7
+)
 
-```{r fit}
-fit <- btwar_fit(
-  y_tr_raw = y_train,
-  y_te_raw = y_test,
-  method   = "ls"
+dados <- list(
+  treino = as.numeric(sim_data$train),
+  teste  = as.numeric(sim_data$test)
 )
 ```
 
-The `summary()` method prints the selected model parameters and
-performance metrics on both sets:
+The true AR coefficients and their corresponding Z-plane poles are:
 
-```{r summary}
-summary(fit)
+```{r true-params}
+cat("True AR coefficients:\n")
+print(phi_true)
+
+cat("\nTrue AR poles:\n")
+print(sim_data$poles)
 ```
 
-## Extracting Model Components
+## Exploratory Analysis
 
-Individual components can be extracted using the standard S3 interface:
+A partial autocorrelation plot confirms the AR order before fitting:
 
-```{r extract}
-# AR coefficients selected by cross-validation
-coef(fit)
-
-# First fitted values on the training set
-head(fitted(fit))
-
-# First training residuals
-head(residuals(fit))
+```{r pacf, fig.cap = "PACF of the training series, suggesting AR order 3."}
+pacf(dados$treino, main = "PACF – Training Series")
 ```
 
-## Visualisation
+## Fitting BTWAR
 
-The `plot()` method produces a `ggplot2` chart of observed versus
-predicted values for either the training or test set.
+```{r fit, message = FALSE}
+p=3
 
-```{r plot-test, fig.cap = "Test set: observed series (dark) vs. BTWAR predictions (blue)."}
-plot(fit, dataset = "test", show_observed = TRUE)
+res <- btwar_fit(
+  y_tr_raw = dados$treino,
+  y_te_raw = dados$teste,
+  fs       = fs,
+  method   = "ls",
+  N_vec    = p:p
+)
+
+cat("BTWAR Performance:\n")
+print(res$performance)
 ```
 
-An external benchmark series can be overlaid for direct comparison:
+## Comparison with ARIMA
 
-```{r plot-benchmark, eval = FALSE}
-arima_fit  <- arima(y_train, order = c(1, 0, 0))
-arima_pred <- predict(arima_fit, n.ahead = 100)$pred
-plot(fit,
-     dataset       = "test",
-     show_observed = TRUE,
-     external      = as.numeric(arima_pred),
-     external_name = "ARIMA(1,0,0)")
+We fit an ARIMA(3,0,0) on the same centered training series and compute
+one-step-ahead fitted values aligned with the BTWAR prediction window.
+
+```{r arima}
+fit_arima <- forecast::Arima(
+  res$train$y_real,
+  order = c(p, 0, 0)
+)
+
+arima_fitted_tr <- tail(
+  as.numeric(fitted(fit_arima)),
+  length(res$train$yhat)
+)
+
+arima_vals_te <- tail(
+  as.numeric(fitted(forecast::Arima(dados$teste - res$mu, model = fit_arima))),
+  length(res$test$yhat)
+)
+
+rmse_arima_te <- sqrt(mean((res$test$y_real - arima_vals_te)^2))
+
+cat("RMSE Comparison:\n")
+cat("  BTWAR Test RMSE :", res$performance$rmse_test, "\n")
+cat("  ARIMA Test RMSE :", rmse_arima_te, "\n")
 ```
 
-## Spectral Inspection
+## Time-Series Plots
 
-The power spectrum of the series can be inspected with
-`compute_spectrum()`:
+### BTWAR Predictions
 
-```{r spectrum, fig.cap = "One-sided power spectrum of the simulated AR(3) series."}
-sp <- compute_spectrum(as.numeric(y), fs = 1)
-plot(sp$f, sp$P,
-     type = "l", col = "#2166AC", lwd = 1.5,
-     xlab = "Frequency (Hz)", ylab = "Power",
-     main = "Power Spectrum")
+```{r plot-train-btwar, fig.cap = "Training set: observed series vs. BTWAR predictions."}
+plot(res, dataset = "train", fs = fs,
+     colour_observed = "goldenrod",
+     colour_btwar    = "blue",
+     lwd_observed    = 1.2,
+     lwd_btwar       = 1.2)
+```
+
+```{r plot-test-btwar, fig.cap = "Test set: observed series vs. BTWAR predictions."}
+plot(res, dataset = "test", fs = fs,
+     colour_observed = "goldenrod",
+     colour_btwar    = "blue",
+     lwd_observed    = 1.2,
+     lwd_btwar       = 1.2)
+```
+
+### BTWAR vs. ARIMA
+
+```{r plot-train-arima, fig.cap = "Training set: BTWAR vs. ARIMA one-step-ahead predictions."}
+plot(res, dataset = "train", fs = fs,
+     colour_observed = "goldenrod",
+     colour_btwar    = "blue",
+     colour_external = "red",
+     lwd_observed    = 1.2,
+     lwd_btwar       = 1.2,
+     lwd_external    = 1.2,
+     external        = arima_fitted_tr,
+     external_name   = "ARIMA",
+     layer_order     = c("Observed", "BTWAR", "ARIMA"))
+```
+
+```{r plot-test-arima, fig.cap = "Test set: BTWAR vs. ARIMA one-step-ahead predictions."}
+plot(res, dataset = "test", fs = fs,
+     colour_observed = "goldenrod",
+     colour_btwar    = "blue",
+     colour_external = "red",
+     lwd_observed    = 1.2,
+     lwd_btwar       = 1.2,
+     lwd_external    = 1.2,
+     external        = arima_vals_te,
+     external_name   = "ARIMA",
+     layer_order     = c("Observed", "ARIMA", "BTWAR"))
+```
+
+## Z-Plane Pole Plot
+
+The Z-plane poles of all three models --- the true data-generating process,
+BTWAR, and ARIMA --- are displayed together for direct comparison.
+Poles inside the unit circle correspond to stable models.
+
+```{r zpoles, fig.cap = "Z-plane poles: BTW–AR (selected), true signal, and ARIMA.", fig.height = 5}
+# ARIMA poles
+phi_arima <- coef(fit_arima)[grep("^ar", names(coef(fit_arima)))]
+df_arima  <- data.frame(
+  Re = Re(poles_AR(phi_arima)),
+  Im = Im(poles_AR(phi_arima))
+)
+
+# True signal poles
+df_true <- data.frame(
+  Re = Re(sim_data$poles),
+  Im = Im(sim_data$poles)
+)
+
+plot_zpoles(
+  res,
+  external_list = list(
+    "Observed Signal Z-Poles" = df_true,
+    "ARIMA Z-Poles"           = df_arima
+  )
+)
+```
+
+## Bode Magnitude Diagram
+
+The Bode magnitude diagram shows the frequency response of the Butterworth
+filter underlying the selected BTWAR model, with reference lines at the
+cutoff and Nyquist frequencies.
+
+```{r bode, fig.cap = "Butterworth magnitude response for the selected BTWAR model.", fig.height = 4}
+plot_bode(res, fs = fs)
 ```
 
 # Robustness Options
@@ -196,9 +293,11 @@ $\alpha$ is estimated. The table below summarises the available options.
 
 ```{r robust, eval = FALSE}
 fit_huber <- btwar_fit(
-  y_tr_raw = y_train,
-  y_te_raw = y_test,
-  method   = "huber"
+  y_tr_raw = dados$treino,
+  y_te_raw = dados$teste,
+  fs       = fs,
+  method   = "huber",
+  N_vec    = p:p
 )
 summary(fit_huber)
 ```

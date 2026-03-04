@@ -81,7 +81,8 @@ is \code{NULL}. Default \code{"Dark 2"}.}
 front) and legend order of the series. Must contain the names of all
 active series: \code{"Observed"}, \code{"BTWAR"}, and the value of
 \code{external_name} if an external series is supplied. If \code{NULL}
-(default), the fixed order Observed → BTWAR → external is used.}
+(default), the fixed order Observed \eqn{\to} BTWAR \eqn{\to} external
+is used.}
 
 \item{...}{Additional arguments (currently unused).}
 }
@@ -125,6 +126,6 @@ plot(fit,
 }
 }
 \seealso{
-\code{\link{btwar_fit}}, \code{\link{fitted.btwar}},
-\code{\link{residuals.btwar}}
+\code{\link{btwar_fit}}, \code{\link{plot_zpoles}},
+\code{\link{fitted.btwar}}, \code{\link{residuals.btwar}}
 }

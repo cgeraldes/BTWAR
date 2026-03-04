@@ -53,7 +53,8 @@ An object of class \code{"btwar"}, which is a named list
 containing:
 \describe{
 \item{\code{parameters}}{List with \code{d_used}, \code{N_opt},
-\code{A_opt}, \code{fc_opt}, \code{alpha}, and \code{phi}.}
+\code{A_opt}, \code{fc_opt}, \code{alpha}, \code{phi}, and
+\code{poles_z}.}
 \item{\code{performance}}{List with \code{rmse_train} and
 \code{rmse_test}.}
 \item{\code{train}}{List with \code{y_real} and \code{yhat} for
