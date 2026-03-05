@@ -1,22 +1,20 @@
-citHeader("To cite BTWAR in publications use:")
-
-citEntry(
-  entry = "Article",
-  title = "Butterworth-Induced Autoregressive Modeling Framework",
-  author = personList(
-    person("Carlos", "Bras-Geraldes"),
+bibentry(
+  bibtype      = "Article",
+  title        = "Butterworth-Induced Autoregressive Model",
+  author       = c(
+    person("Carlos", "Brás-Geraldes"),
     person("J. Leonel", "Rocha"),
     person("Filipe", "Martins")
   ),
-  journal = "Mathematics",
-  year = "2026",
-  volume = "14",
-  number = "3",
-  pages = "479",
-  doi = "10.3390/math14030479",
-  textVersion = paste(
-    "Bras-Geraldes, C.; Rocha, J.L.; Martins, F. (2026).",
-    "Butterworth-Induced Autoregressive Modeling Framework.",
+  journal      = "Mathematics",
+  year         = "2026",
+  volume       = "14",
+  number       = "3",
+  pages        = "479",
+  doi          = "10.3390/math14030479",
+  textVersion  = paste(
+    "Brás-Geraldes, C., Rocha, J.L., Martins, F. (2026).",
+    "Butterworth-Induced Autoregressive Model.",
     "Mathematics, 14(3), 479.",
     "https://doi.org/10.3390/math14030479"
   )

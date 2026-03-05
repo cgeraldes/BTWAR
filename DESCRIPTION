@@ -25,9 +25,9 @@ Encoding: UTF-8
 NeedsCompilation: no
 Imports:
     ggplot2,
-    tidyr,
     pracma,
-    tseries
+    tseries,
+    scales
 Suggests:
     knitr,
     rmarkdown

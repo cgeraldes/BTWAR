@@ -14,12 +14,12 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-  collapse  = TRUE,
-  comment   = "#>",
-  fig.width = 6,
+  collapse   = TRUE,
+  comment    = "#>",
+  fig.width  = 6,
   fig.height = 3.5,
-  fig.align = "center",
-  out.width = "90%"
+  fig.align  = "center",
+  out.width  = "90%"
 )
 ```
 
@@ -27,20 +27,31 @@ knitr::opts_chunk$set(
 
 The **BTWAR** package implements the Butterworth-Induced Autoregressive
 modeling framework introduced in @btwar2026. The method derives
-autoregressive (AR) coefficients from analog Butterworth filter prototypes
-mapped into the discrete-time domain via the Matched Z-Transform (MZT).
+autoregressive (AR) coefficients directly from analog Butterworth filter
+prototypes mapped into the discrete-time domain via the Matched Z-Transform
+(MZT).
 
-The key idea is to exploit the well-understood frequency-selectivity
+The central idea is to exploit the well-understood frequency-selectivity
 properties of Butterworth filters --- maximally flat magnitude response,
 monotonic roll-off, and a single tunable cutoff frequency --- and translate
 them into a structured family of AR models. This establishes a principled
 connection between **frequency-domain filter design** and **time-domain
-autoregressive modeling**, with the following practical advantages:
+autoregressive modeling**.
+
+Unlike conventional AR modeling, where coefficients are estimated freely
+from data, the BTW-AR model fixes the AR structure through two physically
+meaningful hyperparameters: the filter order $N$ and the stopband
+attenuation $A_s$. Only a single scalar gain $\alpha$ is estimated from
+the data. This extreme parsimony has a direct practical consequence: the
+fitted model admits a transparent frequency-domain interpretation that
+purely data-driven approaches cannot provide.
+
+The key advantages of the BTW-AR framework are:
 
 - AR coefficients are fully determined by two interpretable parameters:
   filter order $N$ and stopband attenuation $A_s$.
-- The cutoff frequency $f_c$ is optimised during fitting, providing a
-  direct spectral interpretation of the selected model.
+- The cutoff frequency $f_c$ is derived analytically from $(N, A_s)$,
+  providing a direct spectral interpretation of the selected model.
 - Model order selection is performed via nested rolling-origin
   cross-validation, avoiding look-ahead bias.
 - Scaling estimation supports three methods: least squares (LS), least
@@ -51,32 +62,126 @@ autoregressive modeling**, with the following practical advantages:
 
 ## Butterworth Filter Prototype
 
-An $N$-th order analog Butterworth lowpass filter has a squared magnitude
-response
+An $N$-th order analog Butterworth lowpass filter with arbitrary gain
+$H_0$ has transfer function
 
 $$
-|H(j\Omega)|^2 = \frac{1}{1 + \left(\Omega / \Omega_c\right)^{2N}}
+H_a(s) = \frac{H_0}{\prod_{k=1}^{N}(s - s_k)},
 $$
 
-where $\Omega_c$ is the cutoff frequency. The poles of $H(s)$ lie on a
-circle of radius $\Omega_c$ in the left half of the $s$-plane, uniformly
-spaced in angle.
+where the poles $s_k$ are located on a semicircle of radius $\Omega_c$
+in the left half of the $s$-plane,
+
+$$
+s_k = \Omega_c \, e^{\,j\left(\frac{\pi}{2} + \frac{(2k-1)\pi}{2N}\right)},
+\quad k = 1, \ldots, N,
+$$
+
+ensuring stability. 
+
+In this framework, $H_0 = 1$ is adopted to preserve the spectral shape and establish a direct correspondence with the AR model in the $z$-domain.
 
 ## Matched Z-Transform
 
 The MZT maps each analog pole $s_k$ to a discrete-time pole
 $z_k = e^{s_k T}$, where $T = 1/f_s$ is the sampling period.
-The resulting AR polynomial
+Since the Butterworth prototype is an all-pole filter with $H_0 = 1$,
+there are no finite zeros, and the discrete-time transfer function
+reduces to
 
 $$
-A(z) = \prod_{k=1}^{N} \left(1 - z_k z^{-1}\right)
+H(z) = \frac{1}{\prod_{k=1}^{N}\left(1 - z_k z^{-1}\right)},
+\quad z_k = e^{s_k T},
 $$
 
-defines the AR coefficients $\phi_1, \ldots, \phi_N$ via
+which preserves the all-pole structure required by an AR model.
+Expanding the denominator polynomial via Viète's formulas gives
 
 $$
-A(z) = 1 - \phi_1 z^{-1} - \cdots - \phi_N z^{-N}.
+\prod_{k=1}^{N}\left(1 - z_k z^{-1}\right)
+= 1 + a_1 z^{-1} + a_2 z^{-2} + \cdots + a_N z^{-N},
 $$
+
+and the AR coefficients are obtained directly as $\phi_i = -a_i$,
+so that the transfer function matches the standard AR form
+
+$$
+H(z) = \frac{1}{1 - \phi_1 z^{-1} - \cdots - \phi_N z^{-N}}.
+$$
+
+## Correspondence Between Filter Order and AR Order
+
+The following result, established in @btwar2026, formalises the
+equivalence between the number of digital poles and the number of lags in the autoregressive model.
+
+---
+
+**Proposition 2.**
+*Let $H(z)$ be the transfer function of an autoregressive model $y(n)$
+of order $p$. Then $H(z)$ has precisely $p = N$ lags, where $N$ is the
+number of discrete-time poles $z_k = e^{s_k T}$, $k = 1, \ldots, N$.
+In addition, the AR coefficients satisfy $\phi_i = -a_i$, where the
+coefficients $a_i$ are given by Viète's formulas, for $i = 1, \ldots, p$.*
+
+---
+
+Proposition 2 has a direct practical consequence: the Butterworth filter
+order $N$ simultaneously determines the autoregressive model order $p$.
+There is therefore a one-to-one correspondence between the complexity of
+the frequency-domain prototype and the temporal memory of the induced AR
+model. In the example that follows, the PACF is used as a heuristic to
+fix $p = 3$, which immediately sets $N = 3$ for the Butterworth design.
+
+## The Butterworth-Induced Autoregressive Model
+
+The principal theoretical result of @btwar2026 is the following theorem,
+which formally defines the BTW-AR model and establishes the conditions
+under which it is well-defined.
+
+---
+
+**Theorem 1** (Butterworth-Induced Autoregressive Model).
+*Let $y(n)$ be an autoregressive model of order $p$, let $H_a(s)$ be the
+Butterworth filter used to model its all-pole structure, and let
+$\phi_i^{(BW)}$ denote the induced AR coefficients obtained via Viète's
+formulas, for $i = 1, \ldots, N$, where $N$ is the minimum filter order
+required to satisfy the stopband specification*
+
+$$
+N = \left\lceil \frac{1}{2}
+    \frac{\log\!\left(10^{A/10} - 1\right)}
+         {\log\!\left(f_{Nyquist}/f_c\right)}
+\right\rceil,
+$$
+
+*and $A$ is the attenuation in decibels at the Nyquist frequency
+$f_{Nyquist}$. If a scaling factor $\alpha$, estimated by minimising the
+sum of squared residuals, satisfies $\varepsilon(n) \sim N(0,\sigma^2)$,
+then the Butterworth-induced autoregressive model is defined by*
+
+$$
+y(n) = \alpha \sum_{i=1}^{N}
+       \phi_i^{(BW)}\!\left(N,\, A,\, f_{Nyquist}\right)\, y(n-i)
+       + \varepsilon(n).
+$$
+
+---
+
+Three remarks are central to understanding this result.
+First, the AR coefficients $\phi_i^{(BW)}$ are **entirely determined**
+by the triplet $(N, A, f_{Nyquist})$ and are not estimated from the data;
+only the scalar gain $\alpha$ is fitted.
+Second, the filter order $N$ simultaneously controls the autoregressive
+model order and the sharpness of the spectral roll-off.
+Third, when the Gaussian residual assumption is violated, the least-squares
+criterion for $\alpha$ can be replaced by a more general loss function
+
+$$
+J(\alpha) = \sum_{n} \rho\!\left(y(n) - \alpha\,\hat{y}(n)\right),
+$$
+
+accommodating LAD or Huber M-estimation without altering
+the structural form of the model.
 
 ## Model Fitting Pipeline
 
@@ -94,15 +199,15 @@ Given a training series $\{y_t\}$, the fitting procedure is:
 
 # End-to-End Example
 
-This section walks through a complete BTWAR workflow using a simulated
-AR(3) process, including model fitting, comparison with ARIMA, and the
-full suite of diagnostic plots.
+This section walks through a complete BTW-AR workflow using a simulated
+AR(3) process. The example illustrates model fitting, spectral
+interpretation via the Bode magnitude diagram, and the Z-plane pole
+structure of the selected model.
 
 ## Setup
 
 ```{r setup-example, message = FALSE}
 library(BTWAR)
-library(forecast)
 
 set.seed(123)
 
@@ -115,89 +220,73 @@ We simulate an AR(3) process with known coefficients and split it into
 training (70%) and test (30%) sets using `simulate_ar_split()`.
 
 ```{r simulate}
-phi_true <- c(0.34, -0.22, 0.16)
+phi_obs <- c(0.34, -0.22, 0.16)
 
 sim_data <- simulate_ar_split(
-  phi_real   = phi_true,
+  phi_real   = phi_obs,
   n          = 1000,
   burn       = 200,
   prop_train = 0.7
 )
 
 dados <- list(
-  treino = as.numeric(sim_data$train),
-  teste  = as.numeric(sim_data$test)
+  train = as.numeric(sim_data$train),
+  test  = as.numeric(sim_data$test)
 )
 ```
 
-The true AR coefficients and their corresponding Z-plane poles are:
+The simulated AR coefficients and their corresponding Z-plane poles are:
 
 ```{r true-params}
 cat("True AR coefficients:\n")
-print(phi_true)
+print(phi_obs)
 
-cat("\nTrue AR poles:\n")
+cat("\nTrue Z-plane poles:\n")
 print(sim_data$poles)
 ```
 
 ## Exploratory Analysis
 
-A partial autocorrelation plot confirms the AR order before fitting:
+Following @btwar2026, the autoregressive order $p$ --- and consequently
+the filter order $N$, in accordance with the correspondence established
+by the MZT --- is first fixed using the partial autocorrelation function
+(PACF) as a heuristic tool for identifying a suitable model order.
+Once $N$ is fixed, the nested cross-validation procedure searches only
+over the stopband attenuation $A$, reducing the hyperparameter search
+to a one-dimensional grid.
 
-```{r pacf, fig.cap = "PACF of the training series, suggesting AR order 3."}
-pacf(dados$treino, main = "PACF – Training Series")
+```{r pacf, fig.cap = "PACF of the training series. Significant spikes at lags 1, 2, and 3 suggest AR order 3, which fixes the filter order N = 3."}
+pacf(dados$train, main = "PACF – Training Series")
 ```
 
-## Fitting BTWAR
+An inspection of the PACF suggests that an AR model with $p = 3$ lags
+provides an adequate representation of the training series. This fixes
+$N = 3$ prior to cross-validation.
+
+## Fitting the BTW-AR Model
 
 ```{r fit, message = FALSE}
-p=3
+p <- 3
 
 res <- btwar_fit(
-  y_tr_raw = dados$treino,
-  y_te_raw = dados$teste,
+  y_tr_raw = dados$train,
+  y_te_raw = dados$test,
   fs       = fs,
   method   = "ls",
   N_vec    = p:p
 )
 
-cat("BTWAR Performance:\n")
+cat("BTW-AR Performance:\n")
 print(res$performance)
 ```
 
-## Comparison with ARIMA
+## Time-Series Predictions
 
-We fit an ARIMA(3,0,0) on the same centered training series and compute
-one-step-ahead fitted values aligned with the BTWAR prediction window.
+The plots below show the one-step-ahead predictions of the BTW-AR model
+on the training and test sets. The model tracks the observed signal
+closely, capturing the dominant low-frequency dynamics of the process.
 
-```{r arima}
-fit_arima <- forecast::Arima(
-  res$train$y_real,
-  order = c(p, 0, 0)
-)
-
-arima_fitted_tr <- tail(
-  as.numeric(fitted(fit_arima)),
-  length(res$train$yhat)
-)
-
-arima_vals_te <- tail(
-  as.numeric(fitted(forecast::Arima(dados$teste - res$mu, model = fit_arima))),
-  length(res$test$yhat)
-)
-
-rmse_arima_te <- sqrt(mean((res$test$y_real - arima_vals_te)^2))
-
-cat("RMSE Comparison:\n")
-cat("  BTWAR Test RMSE :", res$performance$rmse_test, "\n")
-cat("  ARIMA Test RMSE :", rmse_arima_te, "\n")
-```
-
-## Time-Series Plots
-
-### BTWAR Predictions
-
-```{r plot-train-btwar, fig.cap = "Training set: observed series vs. BTWAR predictions."}
+```{r plot-train, fig.cap = "Training set: observed series vs. BTW-AR predictions."}
 plot(res, dataset = "train", fs = fs,
      colour_observed = "goldenrod",
      colour_btwar    = "blue",
@@ -205,7 +294,7 @@ plot(res, dataset = "train", fs = fs,
      lwd_btwar       = 1.2)
 ```
 
-```{r plot-test-btwar, fig.cap = "Test set: observed series vs. BTWAR predictions."}
+```{r plot-test, fig.cap = "Test set: observed series vs. BTW-AR predictions."}
 plot(res, dataset = "test", fs = fs,
      colour_observed = "goldenrod",
      colour_btwar    = "blue",
@@ -213,49 +302,40 @@ plot(res, dataset = "test", fs = fs,
      lwd_btwar       = 1.2)
 ```
 
-### BTWAR vs. ARIMA
+## Spectral Interpretation: Bode Magnitude Diagram
 
-```{r plot-train-arima, fig.cap = "Training set: BTWAR vs. ARIMA one-step-ahead predictions."}
-plot(res, dataset = "train", fs = fs,
-     colour_observed = "goldenrod",
-     colour_btwar    = "blue",
-     colour_external = "red",
-     lwd_observed    = 1.2,
-     lwd_btwar       = 1.2,
-     lwd_external    = 1.2,
-     external        = arima_fitted_tr,
-     external_name   = "ARIMA",
-     layer_order     = c("Observed", "BTWAR", "ARIMA"))
+A distinctive feature of the BTW-AR framework is that the fitted model
+admits a direct frequency-domain interpretation. The Bode magnitude
+diagram below shows the frequency response of the Butterworth prototype
+underlying the selected model.
+
+```{r bode, fig.cap = "Butterworth magnitude response for the selected BTW-AR model.", fig.width = 10, fig.height = 5, out.width = "100%"}
+plot_bode(res, fs = fs)
 ```
 
-```{r plot-test-arima, fig.cap = "Test set: BTWAR vs. ARIMA one-step-ahead predictions."}
-plot(res, dataset = "test", fs = fs,
-     colour_observed = "goldenrod",
-     colour_btwar    = "blue",
-     colour_external = "red",
-     lwd_observed    = 1.2,
-     lwd_btwar       = 1.2,
-     lwd_external    = 1.2,
-     external        = arima_vals_te,
-     external_name   = "ARIMA",
-     layer_order     = c("Observed", "ARIMA", "BTWAR"))
-```
+The diagram reveals two distinct spectral regions:
 
-## Z-Plane Pole Plot
+- **Passband** $[0, f_c]$ --- the model captures this band with a nearly
+  flat gain, meaning that the low-frequency structure of the signal is
+  represented with minimal distortion.
+- **Transition and stopband** $[f_c, f_{Nyquist}]$ --- components in this
+  region are progressively attenuated, reaching $A$ dB of suppression
+  at the Nyquist frequency.
 
-The Z-plane poles of all three models --- the true data-generating process,
-BTWAR, and ARIMA --- are displayed together for direct comparison.
-Poles inside the unit circle correspond to stable models.
+The cutoff frequency $f_c$ is therefore a direct, interpretable summary
+of the model: it marks the spectral boundary between the signal dynamics
+that the BTW-AR model captures and the higher-frequency variability that
+it treats as noise. This frequency-domain transparency is not available
+in conventional data-driven AR models, where the spectral implications
+of the estimated coefficients are implicit and not immediately readable.
 
-```{r zpoles, fig.cap = "Z-plane poles: BTW–AR (selected), true signal, and ARIMA.", fig.height = 5}
-# ARIMA poles
-phi_arima <- coef(fit_arima)[grep("^ar", names(coef(fit_arima)))]
-df_arima  <- data.frame(
-  Re = Re(poles_AR(phi_arima)),
-  Im = Im(poles_AR(phi_arima))
-)
+## Z-Plane Pole Structure
 
-# True signal poles
+The Z-plane pole plot compares the poles of the fitted BTW-AR model with
+those of the true data-generating process. Poles inside the unit circle
+correspond to stable models.
+
+```{r zpoles, fig.cap = "Z-plane poles: BTW-AR (selected) vs. true signal.", fig.height = 5}
 df_true <- data.frame(
   Re = Re(sim_data$poles),
   Im = Im(sim_data$poles)
@@ -264,37 +344,39 @@ df_true <- data.frame(
 plot_zpoles(
   res,
   external_list = list(
-    "Observed Signal Z-Poles" = df_true,
-    "ARIMA Z-Poles"           = df_arima
+    "True Signal Z-Poles" = df_true
   )
 )
 ```
 
-## Bode Magnitude Diagram
-
-The Bode magnitude diagram shows the frequency response of the Butterworth
-filter underlying the selected BTWAR model, with reference lines at the
-cutoff and Nyquist frequencies.
-
-```{r bode, fig.cap = "Butterworth magnitude response for the selected BTWAR model.", fig.height = 4}
-plot_bode(res, fs = fs)
-```
+The pole locations of the BTW-AR model are entirely determined by the
+Butterworth design parameters $(N, A)$ and are not estimated from the
+data. Despite this structural constraint, the selected model places its
+poles in a region of the Z-plane consistent with the dominant dynamics of
+the true process, reflecting the effectiveness of the cross-validation
+procedure in identifying a spectrally appropriate model.
 
 # Robustness Options
 
 The `method` argument of `btwar_fit()` controls how the scaling parameter
-$\alpha$ is estimated. The table below summarises the available options.
+$\alpha$ is estimated from the data. Three options are available,
+corresponding to different assumptions about the residual distribution.
 
-| Method | Description | Recommended when |
-|--------|-------------|------------------|
-| `"ls"` | Ordinary least squares | Gaussian residuals |
-| `"lad"` | Least absolute deviations | Heavy-tailed or skewed noise |
-| `"huber"` | Huber M-estimator ($\delta = 1.345$) | Mild outliers |
+| Method    | Loss function $\rho(e)$             | Recommended when                    |
+|-----------|-------------------------------------|-------------------------------------|
+| `"ls"`    | $e^2$                               | Gaussian residuals                  |
+| `"lad"`   | $|e|$                               | Heavy-tailed or skewed noise        |
+| `"huber"` | Quadratic-linear ($\delta = 1.345$) | Mild outliers present               |
+
+Note that the AR coefficient structure is identical across all three
+methods --- only the estimation of the scalar gain $\alpha$ changes.
+This means that the spectral interpretation provided by the Bode diagram
+remains valid regardless of the chosen method.
 
 ```{r robust, eval = FALSE}
 fit_huber <- btwar_fit(
-  y_tr_raw = dados$treino,
-  y_te_raw = dados$teste,
+  y_tr_raw = dados$train,
+  y_te_raw = dados$test,
   fs       = fs,
   method   = "huber",
   N_vec    = p:p

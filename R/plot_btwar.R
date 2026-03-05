@@ -515,7 +515,7 @@ plot_bode <- function(x,
                       lwd_ref          = 1.0,
                       base_size        = 11,
                       title            = NULL) {
-
+  .x <- NULL
   # ---- input validation --------------------------------------------------
   if (!inherits(x, "btwar"))
     stop("'x' must be an object of class 'btwar'.")
