@@ -579,7 +579,7 @@ plot_bode <- function(x,
     title
   } else {
     sprintf(
-      "Butterworth Magnitude Response \u2014 N = %d, fc = %.1f Hz, As = %.0f dB",
+      "Butterworth Magnitude Response \u2014 N = %d, fc = %.1f Hz, A = %.0f dB",
       N, fc, A
     )
   }
