@@ -29,7 +29,8 @@ Imports:
     scales
 Suggests:
     knitr,
-    rmarkdown
+    rmarkdown,
+    spelling
 VignetteBuilder: knitr
 URL: https://doi.org/10.3390/math14030479, https://github.com/cgeraldes/BTWAR
 BugReports: https://github.com/cgeraldes/BTWAR/issues
