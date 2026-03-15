@@ -74,7 +74,7 @@ frequency reflects the actual stopband attenuation achieved by the
 selected filter.
 }
 \examples{
-\dontrun{
+\donttest{
 fit <- btwar_fit(
   y_tr_raw = train_series,
   y_te_raw = test_series,

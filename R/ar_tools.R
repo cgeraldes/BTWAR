@@ -38,7 +38,7 @@
 #' all(Mod(poles) < 1)  # TRUE => stable
 #'
 #' # Use with plot_zpoles
-#' \dontrun{
+#' \donttest{
 #' df <- data.frame(Re = Re(poles), Im = Im(poles))
 #' plot_zpoles(fit, external_list = list("AR(2) poles" = df))
 #' }

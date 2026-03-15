@@ -100,29 +100,34 @@ Series are drawn in the following fixed order (back to front):
 Observed, BTWAR, external.
 }
 \examples{
-\dontrun{
-fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series)
+\donttest{
+  set.seed(42)
+  y <- cumsum(rnorm(900))
+  train_series <- y[1:600]
+  test_series  <- y[601:900]
 
-# Training set
-plot(fit, dataset = "train")
+  fit <- btwar_fit(
+    y_tr_raw = train_series,
+    y_te_raw = test_series,
+    fs       = 2,
+    N_vec    = 2:5,
+    As_vec   = c(20, 40),
+    verbose  = FALSE
+  )
 
-# Test set with observed overlay
-plot(fit, dataset = "test", show_observed = TRUE)
+  # Training set
+  plot(fit, dataset = "train")
 
-# Custom colours and line widths
-plot(fit,
-     dataset         = "test",
-     colour_btwar    = "steelblue",
-     colour_observed = "black",
-     lwd_btwar       = 1.2,
-     lwd_observed    = 0.8)
+  # Test set with observed overlay
+  plot(fit, dataset = "test", show_observed = TRUE)
 
-# Test set with an external benchmark in red
-plot(fit,
-     dataset         = "test",
-     external        = arima_preds,
-     external_name   = "ARIMA",
-     colour_external = "red")
+  # Custom colours and line widths
+  plot(fit,
+       dataset         = "test",
+       colour_btwar    = "steelblue",
+       colour_observed = "black",
+       lwd_btwar       = 1.2,
+       lwd_observed    = 0.8)
 }
 }
 \seealso{

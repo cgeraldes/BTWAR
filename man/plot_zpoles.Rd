@@ -68,7 +68,7 @@ Colours and shapes for external pole sets are assigned sequentially from
 recycling when the number of sets exceeds the palette length.
 }
 \examples{
-\dontrun{
+\donttest{
 fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series, fs = 12000)
 
 # BTW-AR selected poles only

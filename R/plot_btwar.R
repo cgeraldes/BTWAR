@@ -74,31 +74,37 @@ utils::globalVariables(c("time", "Series", "Value", "Re", "Im", "Legend", "x", "
 #' @method plot btwar
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series)
-#'
-#' # Training set
-#' plot(fit, dataset = "train")
-#'
-#' # Test set with observed overlay
-#' plot(fit, dataset = "test", show_observed = TRUE)
-#'
-#' # Custom colours and line widths
-#' plot(fit,
-#'      dataset         = "test",
-#'      colour_btwar    = "steelblue",
-#'      colour_observed = "black",
-#'      lwd_btwar       = 1.2,
-#'      lwd_observed    = 0.8)
-#'
-#' # Test set with an external benchmark in red
-#' plot(fit,
-#'      dataset         = "test",
-#'      external        = arima_preds,
-#'      external_name   = "ARIMA",
-#'      colour_external = "red")
-#' }
+\examples{
+  \donttest{
+    set.seed(42)
+    y <- cumsum(rnorm(900))
+    train_series <- y[1:600]
+    test_series  <- y[601:900]
+
+    fit <- btwar_fit(
+      y_tr_raw = train_series,
+      y_te_raw = test_series,
+      fs       = 2,
+      N_vec    = 2:5,
+      As_vec   = c(20, 40),
+      verbose  = FALSE
+    )
+
+    # Training set
+    plot(fit, dataset = "train")
+
+    # Test set with observed overlay
+    plot(fit, dataset = "test", show_observed = TRUE)
+
+    # Custom colours and line widths
+    plot(fit,
+         dataset         = "test",
+         colour_btwar    = "steelblue",
+         colour_observed = "black",
+         lwd_btwar       = 1.2,
+         lwd_observed    = 0.8)
+  }
+}
 plot.btwar <- function(x,
                        dataset         = c("train", "test"),
                        fs              = 1,
@@ -305,7 +311,7 @@ plot.btwar <- function(x,
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series, fs = 12000)
 #'
 #' # BTW-AR selected poles only
@@ -489,7 +495,7 @@ plot_zpoles <- function(x,
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' fit <- btwar_fit(
 #'   y_tr_raw = train_series,
 #'   y_te_raw = test_series,

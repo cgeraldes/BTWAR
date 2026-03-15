@@ -70,18 +70,25 @@ Fits a Butterworth-Induced Autoregressive (BTWAR) model using
 nested rolling-origin cross-validation for order and attenuation
 parameter selection.
 }
-\examples{
-\dontrun{
-result <- btwar_fit(
-  y_tr_raw = train_series,
-  y_te_raw = test_series,
-  fs       = 2,
-  method   = "ls"
-)
-summary(result)
-}
-
-}
 \seealso{
 \code{\link{predict.btwar}}, \code{\link{summary.btwar}}
+
+#' @examples
+\donttest{
+  set.seed(42)
+  y <- cumsum(rnorm(900))
+  train_series <- y[1:600]
+  test_series  <- y[601:900]
+
+  result <- btwar_fit(
+    y_tr_raw = train_series,
+    y_te_raw = test_series,
+    fs       = 2,
+    method   = "ls",
+    N_vec    = 2:5,
+    As_vec   = c(20, 40),
+    verbose  = FALSE
+  )
+  summary(result)
+}
 }
