@@ -5,3 +5,4 @@
 ^\.github$
 ^CRAN-SUBMISSION$
 ^tlmgr$
+^cran-comments\.md$
