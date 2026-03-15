@@ -265,6 +265,28 @@ The diagram reveals two distinct spectral regions:
 
 The cutoff frequency $f_c$ is therefore a direct, interpretable summary of the model: it marks the spectral boundary between the signal dynamics that the BTW-AR model captures and the higher-frequency variability that it treats as noise. This frequency-domain transparency is not available in conventional data-driven AR models, where the spectral implications of the estimated coefficients are implicit and not immediately readable.
 
+## Frequency Amplitude Spectrum
+
+The amplitude spectrum of the training series provides a complementary 
+view to the Bode magnitude diagram. While the Bode diagram characterizes the frequency response of the Butterworth filter prototype, the amplitude spectrum reveals the actual 
+distribution of energy in the observed signal, allowing a direct visual 
+assessment of how well the cutoff frequency $f_c$ separates the dominant 
+spectral content from the high-frequency components treated as noise by 
+the model.
+```{r amplitude, fig.cap = "Amplitude spectrum of the training series. The cutoff frequency fc separates the dominant signal energy from the high-frequency components.", fig.width = 10, fig.height = 4, out.width = "100%"}
+plot_freq_amplitude(
+  dados$train,
+  fs = fs,
+  fc = res$parameters$fc_opt
+)
+```
+
+The vertical dashed line marks the cutoff frequency $f_c$ selected by 
+cross-validation. Components to the left of this boundary are captured 
+by the BTW-AR model; components to the right are attenuated according 
+to the Butterworth roll-off visible in the Bode diagram above.
+
+
 ## Z-Plane Pole Structure
 
 The Z-plane pole plot compares the poles of the fitted BTW-AR model with those of the true data-generating process. Poles inside the unit circle correspond to stable models.

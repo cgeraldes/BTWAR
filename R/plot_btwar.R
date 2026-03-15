@@ -73,38 +73,17 @@ utils::globalVariables(c("time", "Series", "Value", "Re", "Im", "Legend", "x", "
 #'
 #' @method plot btwar
 #' @export
+#' @examples
+#' \donttest{
+#' sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+#'                          n = 1000, burn = 200, prop_train = 0.7)
+#' fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+#'                  y_te_raw = as.numeric(sim$test),
+#'                  fs = 12000, method = "ls", N_vec = 3:3)
 #'
-\examples{
-  \donttest{
-    set.seed(42)
-    y <- cumsum(rnorm(900))
-    train_series <- y[1:600]
-    test_series  <- y[601:900]
-
-    fit <- btwar_fit(
-      y_tr_raw = train_series,
-      y_te_raw = test_series,
-      fs       = 2,
-      N_vec    = 2:5,
-      As_vec   = c(20, 40),
-      verbose  = FALSE
-    )
-
-    # Training set
-    plot(fit, dataset = "train")
-
-    # Test set with observed overlay
-    plot(fit, dataset = "test", show_observed = TRUE)
-
-    # Custom colours and line widths
-    plot(fit,
-         dataset         = "test",
-         colour_btwar    = "steelblue",
-         colour_observed = "black",
-         lwd_btwar       = 1.2,
-         lwd_observed    = 0.8)
-  }
-}
+#' plot(fit, dataset = "train", fs = 12000)
+#' plot(fit, dataset = "test",  fs = 12000, show_observed = TRUE)
+#' }
 plot.btwar <- function(x,
                        dataset         = c("train", "test"),
                        fs              = 1,
@@ -312,25 +291,16 @@ plot.btwar <- function(x,
 #'
 #' @examples
 #' \donttest{
-#' fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series, fs = 12000)
+#' sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+#'                          n = 1000, burn = 200, prop_train = 0.7)
+#' fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+#'                  y_te_raw = as.numeric(sim$test),
+#'                  fs = 12000, method = "ls", N_vec = 3:3)
 #'
-#' # BTW-AR selected poles only
 #' plot_zpoles(fit)
 #'
-#' # Overlay ARIMA poles
-#' phi_arima <- coef(fit_arima)[grep("^ar", names(coef(fit_arima)))]
-#' df_arima  <- data.frame(Re = Re(polyroot(c(1, -phi_arima))),
-#'                         Im = Im(polyroot(c(1, -phi_arima))))
-#' plot_zpoles(fit, external_list = list("ARIMA Z-Poles" = df_arima))
-#'
-#' # Overlay multiple external pole sets
-#' plot_zpoles(
-#'   fit,
-#'   external_list = list(
-#'     "ARIMA Z-Poles"       = df_arima,
-#'     "True Signal Z-Poles" = df_true
-#'   )
-#' )
+#' df_true <- data.frame(Re = Re(sim$poles), Im = Im(sim$poles))
+#' plot_zpoles(fit, external_list = list("True Signal" = df_true))
 #' }
 plot_zpoles <- function(x,
                         external_list    = NULL,
@@ -496,20 +466,13 @@ plot_zpoles <- function(x,
 #'
 #' @examples
 #' \donttest{
-#' fit <- btwar_fit(
-#'   y_tr_raw = train_series,
-#'   y_te_raw = test_series,
-#'   fs       = 12000
-#' )
+#' sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+#'                          n = 1000, burn = 200, prop_train = 0.7)
+#' fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+#'                  y_te_raw = as.numeric(sim$test),
+#'                  fs = 12000, method = "ls", N_vec = 3:3)
 #'
-#' # Default Bode plot
 #' plot_bode(fit, fs = 12000)
-#'
-#' # Custom colours
-#' plot_bode(fit, fs = 12000,
-#'           colour_magnitude = "steelblue",
-#'           colour_cutoff    = "darkorange",
-#'           colour_nyquist   = "firebrick")
 #' }
 plot_bode <- function(x,
                       fs               = 2,
@@ -623,7 +586,7 @@ plot_bode <- function(x,
     ) +
 
     ggplot2::scale_x_log10(
-      labels = scales::label_math(10^.x)
+      labels = scales::trans_format("log10", scales::math_format(10^.x))
     ) +
 
     ggplot2::scale_color_manual(values = colour_vals) +
@@ -638,6 +601,137 @@ plot_bode <- function(x,
     ggplot2::theme_minimal(base_size = base_size) +
     ggplot2::theme(
       legend.position  = "bottom",
+      panel.grid.minor = ggplot2::element_blank()
+    )
+}
+
+# ============================================================
+# Frequency Amplitude Plot for BTWAR Objects
+# ============================================================
+
+#' Plot the Frequency Amplitude Spectrum of a Time Series
+#'
+#' Displays the one-sided amplitude spectrum of a numeric series,
+#' computed via the Fast Fourier Transform (FFT), with reference lines
+#' at the cutoff frequency and the Nyquist frequency.
+#'
+#' @param x Numeric vector. The time series to analyze. The mean is
+#'   removed internally before computing the FFT.
+#' @param fs Positive numeric. Sampling frequency (Hz). Must match the
+#'   value passed to \code{\link{btwar_fit}}.
+#' @param fc Positive numeric. Cutoff frequency (Hz) to display as a
+#'   reference line. Typically read from \code{fit$parameters$fc_opt}.
+#' @param colour_spectrum Character string. Colour for the amplitude
+#'   spectrum segments. Default \code{"blue"}.
+#' @param colour_cutoff Character string. Colour for the cutoff frequency
+#'   reference line. Default \code{"red"}.
+#' @param colour_nyquist Character string. Colour for the Nyquist frequency
+#'   reference line. Default \code{"black"}.
+#' @param lwd_spectrum Positive numeric. Line width for the amplitude
+#'   spectrum segments. Default \code{0.6}.
+#' @param lwd_ref Positive numeric. Line width for the reference lines.
+#'   Default \code{1.0}.
+#' @param base_size Positive numeric. Base font size passed to
+#'   \code{\link[ggplot2]{theme_minimal}}. Default \code{11}.
+#' @param title Character string. Plot title. Default \code{NULL} (no title).
+#'
+#' @return A \code{\link[ggplot2]{ggplot}} object. The plot is also printed
+#'   as a side effect when called interactively.
+#'
+#' @seealso \code{\link{btwar_fit}}, \code{\link{plot.btwar}},
+#'   \code{\link{plot_bode}}
+#'
+#' @importFrom ggplot2 ggplot aes geom_segment geom_vline
+#'   scale_color_manual labs theme_minimal theme element_blank
+#'
+#' @export
+#'
+#' @examples
+#' \donttest{
+#' sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+#'                          n = 1000, burn = 200, prop_train = 0.7)
+#' fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+#'                  y_te_raw = as.numeric(sim$test),
+#'                  fs = 12000, method = "ls", N_vec = 3:3)
+#'
+#' plot_freq_amplitude(as.numeric(sim$train),
+#'                fs = 12000,
+#'                fc = fit$parameters$fc_opt)
+#' }
+plot_freq_amplitude <- function(x,
+                           fs,
+                           fc,
+                           colour_spectrum = "blue",
+                           colour_cutoff   = "red",
+                           colour_nyquist  = "black",
+                           lwd_spectrum    = 0.6,
+                           lwd_ref         = 1.0,
+                           base_size       = 11,
+                           title           = NULL) {
+
+  # ---- input validation --------------------------------------------------
+  if (!is.numeric(x) || length(x) < 2L)
+    stop("'x' must be a numeric vector of length >= 2.")
+  if (!is.numeric(fs) || length(fs) != 1L || fs <= 0)
+    stop("'fs' must be a single positive number.")
+  if (!is.numeric(fc) || length(fc) != 1L || fc <= 0)
+    stop("'fc' must be a single positive number.")
+  if (!is.numeric(lwd_spectrum) || length(lwd_spectrum) != 1L || lwd_spectrum <= 0)
+    stop("'lwd_spectrum' must be a single positive number.")
+  if (!is.numeric(lwd_ref) || length(lwd_ref) != 1L || lwd_ref <= 0)
+    stop("'lwd_ref' must be a single positive number.")
+  if (!is.numeric(base_size) || length(base_size) != 1L || base_size <= 0)
+    stop("'base_size' must be a single positive number.")
+  if (!is.null(title) && (!is.character(title) || length(title) != 1L))
+    stop("'title' must be a single character string or NULL.")
+
+  # ---- FFT ---------------------------------------------------------------
+  x   <- x - mean(x, na.rm = TRUE)
+  n   <- length(x)
+  A   <- Mod(stats::fft(x)) / n
+  f   <- (seq_len(n) - 1L) * fs / n
+  idx <- seq_len(floor(n / 2))
+
+  df <- data.frame(f = f[idx], A = A[idx])
+
+  f_nyq <- fs / 2
+
+  # ---- legend labels -----------------------------------------------------
+  lbl_spectrum <- "Amplitude spectrum"
+  lbl_cutoff   <- sprintf("Cutoff frequency (%.1f Hz)", fc)
+  lbl_nyquist  <- sprintf("Nyquist frequency (%.1f Hz)", f_nyq)
+
+  colour_vals <- stats::setNames(
+    c(colour_spectrum, colour_cutoff, colour_nyquist),
+    c(lbl_spectrum,    lbl_cutoff,    lbl_nyquist)
+  )
+
+  # ---- build plot --------------------------------------------------------
+  ggplot2::ggplot(df, ggplot2::aes(x = f)) +
+    ggplot2::geom_segment(
+      ggplot2::aes(xend = f, y = 0, yend = A, colour = lbl_spectrum),
+      linewidth = lwd_spectrum
+    ) +
+    ggplot2::geom_vline(
+      ggplot2::aes(xintercept = fc,    colour = lbl_cutoff),
+      linetype  = "dashed",
+      linewidth = lwd_ref
+    ) +
+    ggplot2::geom_vline(
+      ggplot2::aes(xintercept = f_nyq, colour = lbl_nyquist),
+      linetype  = "dashed",
+      linewidth = lwd_ref
+    ) +
+    ggplot2::scale_color_manual(values = colour_vals) +
+    ggplot2::labs(
+      title = title,
+      x     = "Frequency (Hz)",
+      y     = expression(abs(X(f))),
+      color = NULL
+    ) +
+    ggplot2::theme_minimal(base_size = base_size) +
+    ggplot2::theme(
+      legend.position  = "top",
       panel.grid.minor = ggplot2::element_blank()
     )
 }

@@ -69,25 +69,16 @@ recycling when the number of sets exceeds the palette length.
 }
 \examples{
 \donttest{
-fit <- btwar_fit(y_tr_raw = train_series, y_te_raw = test_series, fs = 12000)
+sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+                         n = 1000, burn = 200, prop_train = 0.7)
+fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+                 y_te_raw = as.numeric(sim$test),
+                 fs = 12000, method = "ls", N_vec = 3:3)
 
-# BTW-AR selected poles only
 plot_zpoles(fit)
 
-# Overlay ARIMA poles
-phi_arima <- coef(fit_arima)[grep("^ar", names(coef(fit_arima)))]
-df_arima  <- data.frame(Re = Re(polyroot(c(1, -phi_arima))),
-                        Im = Im(polyroot(c(1, -phi_arima))))
-plot_zpoles(fit, external_list = list("ARIMA Z-Poles" = df_arima))
-
-# Overlay multiple external pole sets
-plot_zpoles(
-  fit,
-  external_list = list(
-    "ARIMA Z-Poles"       = df_arima,
-    "True Signal Z-Poles" = df_true
-  )
-)
+df_true <- data.frame(Re = Re(sim$poles), Im = Im(sim$poles))
+plot_zpoles(fit, external_list = list("True Signal" = df_true))
 }
 }
 \seealso{

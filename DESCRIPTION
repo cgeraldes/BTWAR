@@ -17,7 +17,7 @@ Description: Implements the Butterworth-Induced Autoregressive ('BTWAR')
     connection between frequency-domain filter design and time-domain
     autoregressive modeling. Model order selection is performed via
     nested rolling-origin cross-validation. Method described in
-    Bras-Geraldes et al. (2026) <doi:10.3390/math14030479>.
+    Bras-Geraldes, Rocha and Martins (2026) <doi:10.3390/math14030479>.
 Depends: R (>= 3.5.0)
 License: GPL-3
 Encoding: UTF-8

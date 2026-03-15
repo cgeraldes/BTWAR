@@ -75,20 +75,13 @@ selected filter.
 }
 \examples{
 \donttest{
-fit <- btwar_fit(
-  y_tr_raw = train_series,
-  y_te_raw = test_series,
-  fs       = 12000
-)
+sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+                         n = 1000, burn = 200, prop_train = 0.7)
+fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+                 y_te_raw = as.numeric(sim$test),
+                 fs = 12000, method = "ls", N_vec = 3:3)
 
-# Default Bode plot
 plot_bode(fit, fs = 12000)
-
-# Custom colours
-plot_bode(fit, fs = 12000,
-          colour_magnitude = "steelblue",
-          colour_cutoff    = "darkorange",
-          colour_nyquist   = "firebrick")
 }
 }
 \seealso{

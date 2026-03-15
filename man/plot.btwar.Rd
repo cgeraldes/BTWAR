@@ -101,33 +101,14 @@ Observed, BTWAR, external.
 }
 \examples{
 \donttest{
-  set.seed(42)
-  y <- cumsum(rnorm(900))
-  train_series <- y[1:600]
-  test_series  <- y[601:900]
+sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+                         n = 1000, burn = 200, prop_train = 0.7)
+fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+                 y_te_raw = as.numeric(sim$test),
+                 fs = 12000, method = "ls", N_vec = 3:3)
 
-  fit <- btwar_fit(
-    y_tr_raw = train_series,
-    y_te_raw = test_series,
-    fs       = 2,
-    N_vec    = 2:5,
-    As_vec   = c(20, 40),
-    verbose  = FALSE
-  )
-
-  # Training set
-  plot(fit, dataset = "train")
-
-  # Test set with observed overlay
-  plot(fit, dataset = "test", show_observed = TRUE)
-
-  # Custom colours and line widths
-  plot(fit,
-       dataset         = "test",
-       colour_btwar    = "steelblue",
-       colour_observed = "black",
-       lwd_btwar       = 1.2,
-       lwd_observed    = 0.8)
+plot(fit, dataset = "train", fs = 12000)
+plot(fit, dataset = "test",  fs = 12000, show_observed = TRUE)
 }
 }
 \seealso{

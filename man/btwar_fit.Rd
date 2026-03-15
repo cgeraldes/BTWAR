@@ -70,10 +70,7 @@ Fits a Butterworth-Induced Autoregressive (BTWAR) model using
 nested rolling-origin cross-validation for order and attenuation
 parameter selection.
 }
-\seealso{
-\code{\link{predict.btwar}}, \code{\link{summary.btwar}}
-
-#' @examples
+\examples{
 \donttest{
   set.seed(42)
   y <- cumsum(rnorm(900))
@@ -91,4 +88,7 @@ parameter selection.
   )
   summary(result)
 }
+}
+\seealso{
+\code{\link{predict.btwar}}, \code{\link{summary.btwar}}
 }

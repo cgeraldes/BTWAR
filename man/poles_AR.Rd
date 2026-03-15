@@ -31,13 +31,19 @@ degree order.
 }
 \examples{
 # AR(2) with phi = c(0.6, -0.3)
-phi <- c(0.6, -0.3)
+phi  <- c(0.6, -0.3)
 poles <- poles_AR(phi)
 print(poles)
 all(Mod(poles) < 1)  # TRUE => stable
 
-# Use with plot_zpoles
 \donttest{
+# Use with plot_zpoles
+sim <- simulate_ar_split(phi_real = c(0.34, -0.22, 0.16),
+                         n = 1000, burn = 200, prop_train = 0.7)
+fit <- btwar_fit(y_tr_raw = as.numeric(sim$train),
+                 y_te_raw = as.numeric(sim$test),
+                 fs = 12000, method = "ls", N_vec = 3:3)
+
 df <- data.frame(Re = Re(poles), Im = Im(poles))
 plot_zpoles(fit, external_list = list("AR(2) poles" = df))
 }
